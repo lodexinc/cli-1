@@ -155,6 +155,21 @@ type FakeCloudControllerClient struct {
 		result2 ccv2.Warnings
 		result3 error
 	}
+	GetOrganizationStub        func(guid string) (ccv2.Organization, ccv2.Warnings, error)
+	getOrganizationMutex       sync.RWMutex
+	getOrganizationArgsForCall []struct {
+		guid string
+	}
+	getOrganizationReturns struct {
+		result1 ccv2.Organization
+		result2 ccv2.Warnings
+		result3 error
+	}
+	getOrganizationReturnsOnCall map[int]struct {
+		result1 ccv2.Organization
+		result2 ccv2.Warnings
+		result3 error
+	}
 	GetOrganizationsStub        func(queries []ccv2.Query) ([]ccv2.Organization, ccv2.Warnings, error)
 	getOrganizationsMutex       sync.RWMutex
 	getOrganizationsArgsForCall []struct {
@@ -1029,6 +1044,60 @@ func (fake *FakeCloudControllerClient) GetJobReturnsOnCall(i int, result1 ccv2.J
 	}
 	fake.getJobReturnsOnCall[i] = struct {
 		result1 ccv2.Job
+		result2 ccv2.Warnings
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeCloudControllerClient) GetOrganization(guid string) (ccv2.Organization, ccv2.Warnings, error) {
+	fake.getOrganizationMutex.Lock()
+	ret, specificReturn := fake.getOrganizationReturnsOnCall[len(fake.getOrganizationArgsForCall)]
+	fake.getOrganizationArgsForCall = append(fake.getOrganizationArgsForCall, struct {
+		guid string
+	}{guid})
+	fake.recordInvocation("GetOrganization", []interface{}{guid})
+	fake.getOrganizationMutex.Unlock()
+	if fake.GetOrganizationStub != nil {
+		return fake.GetOrganizationStub(guid)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
+	}
+	return fake.getOrganizationReturns.result1, fake.getOrganizationReturns.result2, fake.getOrganizationReturns.result3
+}
+
+func (fake *FakeCloudControllerClient) GetOrganizationCallCount() int {
+	fake.getOrganizationMutex.RLock()
+	defer fake.getOrganizationMutex.RUnlock()
+	return len(fake.getOrganizationArgsForCall)
+}
+
+func (fake *FakeCloudControllerClient) GetOrganizationArgsForCall(i int) string {
+	fake.getOrganizationMutex.RLock()
+	defer fake.getOrganizationMutex.RUnlock()
+	return fake.getOrganizationArgsForCall[i].guid
+}
+
+func (fake *FakeCloudControllerClient) GetOrganizationReturns(result1 ccv2.Organization, result2 ccv2.Warnings, result3 error) {
+	fake.GetOrganizationStub = nil
+	fake.getOrganizationReturns = struct {
+		result1 ccv2.Organization
+		result2 ccv2.Warnings
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeCloudControllerClient) GetOrganizationReturnsOnCall(i int, result1 ccv2.Organization, result2 ccv2.Warnings, result3 error) {
+	fake.GetOrganizationStub = nil
+	if fake.getOrganizationReturnsOnCall == nil {
+		fake.getOrganizationReturnsOnCall = make(map[int]struct {
+			result1 ccv2.Organization
+			result2 ccv2.Warnings
+			result3 error
+		})
+	}
+	fake.getOrganizationReturnsOnCall[i] = struct {
+		result1 ccv2.Organization
 		result2 ccv2.Warnings
 		result3 error
 	}{result1, result2, result3}
@@ -2345,6 +2414,8 @@ func (fake *FakeCloudControllerClient) Invocations() map[string][][]interface{} 
 	defer fake.getApplicationsMutex.RUnlock()
 	fake.getJobMutex.RLock()
 	defer fake.getJobMutex.RUnlock()
+	fake.getOrganizationMutex.RLock()
+	defer fake.getOrganizationMutex.RUnlock()
 	fake.getOrganizationsMutex.RLock()
 	defer fake.getOrganizationsMutex.RUnlock()
 	fake.getOrganizationPrivateDomainsMutex.RLock()
