@@ -24,7 +24,7 @@ var _ = Describe("Space Summary Actions", func() {
 	})
 
 	JustBeforeEach(func() {
-		spaceSummary, warnings, err = actor.GetSpaceSummaryByOrganizationAndName("some-org-guid", "some-space-name")
+		spaceSummary, warnings, err = actor.GetSpaceSummaryByOrganizationAndName("some-org-guid", "some-space")
 	})
 
 	Describe("GetOrganizationSummaryByName", func() {
@@ -32,86 +32,164 @@ var _ = Describe("Space Summary Actions", func() {
 			BeforeEach(func() {
 				fakeCloudControllerClient.GetOrganizationReturns(
 					ccv2.Organization{
+						GUID: "some-org-guid",
 						Name: "some-org",
 					},
 					ccv2.Warnings{"warning-1", "warning-2"},
 					nil)
+
+				fakeCloudControllerClient.GetSpacesReturns(
+					[]ccv2.Space{
+						{
+							GUID: "some-space-guid",
+							Name: "some-space",
+							SpaceQuotaDefinitionGUID: "some-space-quota-guid",
+						},
+					},
+					ccv2.Warnings{"warning-3", "warning-4"},
+					nil,
+				)
+
+				fakeCloudControllerClient.GetApplicationsReturns(
+					[]ccv2.Application{
+						{
+							Name: "some-app-2",
+						},
+						{
+							Name: "some-app-1",
+						},
+					},
+					ccv2.Warnings{"warning-5", "warning-6"},
+					nil,
+				)
+
+				fakeCloudControllerClient.GetSpaceServiceInstancesReturns(
+					[]ccv2.ServiceInstance{
+						{
+							GUID: "some-service-instance-guid-2",
+							Name: "some-service-instance-2",
+						},
+						{
+							GUID: "some-service-instance-guid-1",
+							Name: "some-service-instance-1",
+						},
+					},
+					ccv2.Warnings{"warning-7", "warning-8"},
+					nil,
+				)
+
+				fakeCloudControllerClient.GetSpaceQuotaReturns(
+					ccv2.SpaceQuota{
+						GUID: "some-space-quota-guid",
+						Name: "some-space-quota",
+					},
+					ccv2.Warnings{"warning-9", "warning-10"},
+					nil,
+				)
+
+				fakeCloudControllerClient.GetSpaceRunningSecurityGroupsBySpaceReturns(
+					[]ccv2.SecurityGroup{
+						{
+							Name: "some-shared-security-group",
+						},
+						{
+							Name: "some-running-security-group",
+						},
+					},
+					ccv2.Warnings{"warning-11", "warning-12"},
+					nil,
+				)
+
+				fakeCloudControllerClient.GetSpaceStagingSecurityGroupsBySpaceReturns(
+					[]ccv2.SecurityGroup{
+						{
+							Name: "some-staging-security-group",
+						},
+						{
+							Name: "some-shared-security-group",
+						},
+					},
+					ccv2.Warnings{"warning-13", "warning-14"},
+					nil,
+				)
 			})
-
-			// 	fakeCloudControllerClient.GetSharedDomainsReturns(
-			// 		[]ccv2.Domain{
-			// 			{
-			// 				GUID: "shared-domain-guid-2",
-			// 				Name: "shared-domain-2",
-			// 			},
-			// 			{
-			// 				GUID: "shared-domain-guid-1",
-			// 				Name: "shared-domain-1",
-			// 			},
-			// 		},
-			// 		ccv2.Warnings{"warning-3", "warning-4"},
-			// 		nil)
-
-			// 	fakeCloudControllerClient.GetOrganizationPrivateDomainsReturns(
-			// 		[]ccv2.Domain{
-			// 			{
-			// 				GUID: "private-domain-guid-2",
-			// 				Name: "private-domain-2",
-			// 			},
-			// 			{
-			// 				GUID: "private-domain-guid-1",
-			// 				Name: "private-domain-1",
-			// 			},
-			// 		},
-			// 		ccv2.Warnings{"warning-5", "warning-6"},
-			// 		nil)
-
-			// 	fakeCloudControllerClient.GetOrganizationQuotaReturns(
-			// 		ccv2.OrganizationQuota{
-			// 			GUID: "some-org-quota-guid",
-			// 			Name: "some-org-quota",
-			// 		},
-			// 		ccv2.Warnings{"warning-7", "warning-8"},
-			// 		nil)
-
-			// 	fakeCloudControllerClient.GetSpacesReturns(
-			// 		[]ccv2.Space{
-			// 			{
-			// 				GUID:     "space-2-guid",
-			// 				Name:     "space-2",
-			// 				AllowSSH: false,
-			// 			},
-			// 			{
-			// 				GUID:     "space-1-guid",
-			// 				Name:     "space-1",
-			// 				AllowSSH: true,
-			// 			},
-			// 		},
-			// 		ccv2.Warnings{"warning-9", "warning-10"},
-			// 		nil)
-			// })
 
 			It("returns the organization summary and all warnings", func() {
-				Expect(fakeCloudControllerClient.GetOrganizationCallCount()).To(Equal(1))
-				Expect(fakeCloudControllerClient.GetOrganizationArgsForCall(0)).To(Equal("some-org-guid"))
-				// Expect(fakeCloudControllerClient.GetSharedDomainsCallCount()).To(Equal(1))
-				// Expect(fakeCloudControllerClient.GetOrganizationPrivateDomainsCallCount()).To(Equal(1))
-				// Expect(fakeCloudControllerClient.GetOrganizationPrivateDomainsArgsForCall(0)).To(Equal("some-org-guid"))
-				// Expect(fakeCloudControllerClient.GetOrganizationQuotaCallCount()).To(Equal(1))
-				// Expect(fakeCloudControllerClient.GetOrganizationQuotaArgsForCall(0)).To(Equal("some-quota-definition-guid"))
-				// Expect(fakeCloudControllerClient.GetSpacesCallCount()).To(Equal(1))
-				// Expect(fakeCloudControllerClient.GetSpacesArgsForCall(0)[0].Value).To(Equal("some-org-guid"))
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(warnings).To(ConsistOf([]string{
+					"warning-1",
+					"warning-2",
+					"warning-3",
+					"warning-4",
+					"warning-5",
+					"warning-6",
+					"warning-7",
+					"warning-8",
+					"warning-9",
+					"warning-10",
+					"warning-11",
+					"warning-12",
+					"warning-13",
+					"warning-14",
+				}))
 
 				Expect(spaceSummary).To(Equal(SpaceSummary{
-					SpaceName: "some-space-name",
-					OrgName:   "some-org",
-					// QuotaName:   "some-org-quota",
-					// DomainNames: []string{"private-domain-1", "private-domain-2", "shared-domain-1", "shared-domain-2"},
-					// SpaceNames:  []string{"space-1", "space-2"},
+					SpaceName:            "some-space",
+					OrgName:              "some-org",
+					AppNames:             []string{"some-app-1", "some-app-2"},
+					ServiceInstanceNames: []string{"some-service-instance-1", "some-service-instance-2"},
+					SpaceQuotaName:       "some-space-quota",
+					SecurityGroupNames:   []string{"some-running-security-group", "some-shared-security-group", "some-staging-security-group"},
 				}))
-				Expect(warnings).To(ConsistOf([]string{"warning-1", "warning-2"}))
-				Expect(err).NotTo(HaveOccurred())
+
+				Expect(fakeCloudControllerClient.GetOrganizationCallCount()).To(Equal(1))
+				Expect(fakeCloudControllerClient.GetOrganizationArgsForCall(0)).To(Equal("some-org-guid"))
+
+				Expect(fakeCloudControllerClient.GetSpacesCallCount()).To(Equal(1))
+				query := fakeCloudControllerClient.GetSpacesArgsForCall(0)
+				Expect(query).To(ConsistOf(
+					ccv2.Query{
+						Filter:   ccv2.NameFilter,
+						Operator: ccv2.EqualOperator,
+						Value:    "some-space",
+					},
+					ccv2.Query{
+						Filter:   ccv2.OrganizationGUIDFilter,
+						Operator: ccv2.EqualOperator,
+						Value:    "some-org-guid",
+					},
+				))
+
+				Expect(fakeCloudControllerClient.GetApplicationsCallCount()).To(Equal(1))
+				query = fakeCloudControllerClient.GetApplicationsArgsForCall(0)
+				Expect(query).To(ConsistOf(
+					ccv2.Query{
+						Filter:   ccv2.SpaceGUIDFilter,
+						Operator: ccv2.EqualOperator,
+						Value:    "some-space-guid",
+					},
+				))
+
+				Expect(fakeCloudControllerClient.GetSpaceServiceInstancesCallCount()).To(Equal(1))
+				spaceGUID, includeUserProvidedServices, query := fakeCloudControllerClient.GetSpaceServiceInstancesArgsForCall(0)
+				Expect(spaceGUID).To(Equal("some-space-guid"))
+				Expect(includeUserProvidedServices).To(BeTrue())
+				Expect(query).To(BeNil())
+
+				Expect(fakeCloudControllerClient.GetSpaceQuotaCallCount()).To(Equal(1))
+				spaceQuotaGUID := fakeCloudControllerClient.GetSpaceQuotaArgsForCall(0)
+				Expect(spaceQuotaGUID).To(Equal("some-space-quota-guid"))
+
+				Expect(fakeCloudControllerClient.GetSpaceRunningSecurityGroupsBySpaceCallCount()).To(Equal(1))
+				spaceGUID = fakeCloudControllerClient.GetSpaceRunningSecurityGroupsBySpaceArgsForCall(0)
+				Expect(spaceGUID).To(Equal("some-space-guid"))
+
+				Expect(fakeCloudControllerClient.GetSpaceStagingSecurityGroupsBySpaceCallCount()).To(Equal(1))
+				spaceGUID = fakeCloudControllerClient.GetSpaceStagingSecurityGroupsBySpaceArgsForCall(0)
+				Expect(spaceGUID).To(Equal("some-space-guid"))
 			})
+
 			// })
 
 			// Context("when an error is encountered getting the organization", func() {

@@ -3,6 +3,7 @@ package ccv2_test
 import (
 	"net/http"
 
+	"code.cloudfoundry.org/cli/api/cloudcontroller"
 	. "code.cloudfoundry.org/cli/api/cloudcontroller/ccv2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -168,6 +169,59 @@ var _ = Describe("Security Groups", func() {
 					},
 				}))
 				Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+			})
+		})
+	})
+
+	Describe("GetSharedSecurityGroup", func() {
+		Context("when the shared domain exists", func() {
+			BeforeEach(func() {
+				response := `{
+						"metadata": {
+							"guid": "shared-domain-guid",
+							"updated_at": null
+						},
+						"entity": {
+							"name": "shared-domain-1.com"
+						}
+				}`
+				server.AppendHandlers(
+					CombineHandlers(
+						VerifyRequest(http.MethodGet, "/v2/shared_domains/shared-domain-guid"),
+						RespondWith(http.StatusOK, response, http.Header{"X-Cf-Warnings": {"this is a warning"}}),
+					),
+				)
+			})
+
+			It("returns the shared domain and all warnings", func() {
+				domain, warnings, err := client.GetSharedSecurityGroup("shared-domain-guid")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(domain).To(Equal(SecurityGroup{Name: "shared-domain-1.com"}))
+				Expect(warnings).To(ConsistOf(Warnings{"this is a warning"}))
+			})
+		})
+
+		Context("when the shared domain does not exist", func() {
+			BeforeEach(func() {
+				response := `{
+					"code": 130002,
+					"description": "The domain could not be found: shared-domain-guid",
+					"error_code": "CF-SecurityGroupNotFound"
+				}`
+				server.AppendHandlers(
+					CombineHandlers(
+						VerifyRequest(http.MethodGet, "/v2/shared_domains/shared-domain-guid"),
+						RespondWith(http.StatusNotFound, response),
+					),
+				)
+			})
+
+			It("returns an error", func() {
+				domain, _, err := client.GetSharedSecurityGroup("shared-domain-guid")
+				Expect(err).To(MatchError(cloudcontroller.ResourceNotFoundError{
+					Message: "The domain could not be found: shared-domain-guid",
+				}))
+				Expect(domain).To(Equal(SecurityGroup{}))
 			})
 		})
 	})

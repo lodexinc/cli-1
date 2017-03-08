@@ -75,3 +75,28 @@ func (client *Client) GetSecurityGroups(queries []Query) ([]SecurityGroup, Warni
 
 	return securityGroupsList, warnings, err
 }
+
+// GetSharedSecurityGroup returns the Shared Domain associated with the provided
+// Space GUID.
+func (client *Client) GetSharedSecurityGroup(spaceGUID string) (SecurityGroup, Warnings, error) {
+	// request, err := client.newHTTPRequest(requestOptions{
+	// 	RequestName: internal.SharedSecurityGroup,
+	// 	URIParams:   map[string]string{"shared_domain_guid": domainGUID},
+	// })
+	// if err != nil {
+	// 	return SecurityGroup{}, nil, err
+	// }
+
+	// var domain SecurityGroup
+	// response := cloudcontroller.Response{
+	// 	Result: &domain,
+	// }
+
+	// err = client.connection.Make(request, &response)
+	// if err != nil {
+	// 	return SecurityGroup{}, response.Warnings, err
+	// }
+
+	// return domain, response.Warnings, nil
+	return SecurityGroup{}, nil, nil
+}

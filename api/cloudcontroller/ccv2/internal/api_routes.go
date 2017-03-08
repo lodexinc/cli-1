@@ -16,6 +16,7 @@ const (
 	DeleteOrganizationRequest              = "DeleteOrganization"
 	DeleteRouteRequest                     = "DeleteRoute"
 	DeleteServiceBindingRequest            = "DeleteServiceBinding"
+	GetOrganizationRequest                 = "GetOrganization"
 	InfoRequest                            = "Info"
 	JobRequest                             = "Job"
 	OrganizationsRequest                   = "Organizations"
@@ -50,6 +51,7 @@ var APIRoutes = rata.Routes{
 	{Path: "/v2/jobs/:job_guid", Method: http.MethodGet, Name: JobRequest},
 	{Path: "/v2/organizations", Method: http.MethodGet, Name: OrganizationsRequest},
 	{Path: "/v2/organizations/:organization_guid", Method: http.MethodDelete, Name: DeleteOrganizationRequest},
+	{Path: "/v2/organizations/:organization_guid", Method: http.MethodGet, Name: GetOrganizationRequest},
 	{Path: "/v2/organizations/:organization_guid/private_domains", Method: http.MethodGet, Name: PrivateDomainsFromOrganizationRequest},
 	{Path: "/v2/private_domains/:private_domain_guid", Method: http.MethodGet, Name: PrivateDomainRequest},
 	{Path: "/v2/quota_definitions/:organization_quota_guid", Method: http.MethodGet, Name: OrganizationQuotaRequest},

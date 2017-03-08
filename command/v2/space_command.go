@@ -16,7 +16,7 @@ import (
 
 type SpaceActor interface {
 	GetSpaceByOrganizationAndName(orgGUID string, spaceName string) (v2action.Space, v2action.Warnings, error)
-	GetSpaceSummaryByOrganizationAndName(orgGUID string, spaceName string, includeSecurityGroupRules bool) (v2action.SpaceSummary, v2action.Warnings, error)
+	GetSpaceSummaryByOrganizationAndName(orgGUID string, spaceName string) (v2action.SpaceSummary, v2action.Warnings, error)
 }
 
 type SpaceCommand struct {
