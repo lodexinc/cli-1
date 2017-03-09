@@ -1,10 +1,15 @@
 package v2action
 
-import (
-	"sort"
+import "sort"
 
-	"code.cloudfoundry.org/cli/util/generic"
-)
+type SecurityGroupRule struct {
+	Name        string
+	Description string
+	Destination string
+	Lifecycle   string
+	Ports       string
+	Protocol    string
+}
 
 type SpaceSummary struct {
 	SpaceName            string
@@ -13,35 +18,29 @@ type SpaceSummary struct {
 	ServiceInstanceNames []string
 	SpaceQuotaName       string
 	SecurityGroupNames   []string
-	// SecurityGroupRules   []SecurityGroupRule
+	SecurityGroupRules   []SecurityGroupRule
 }
-
-// type SecurityGroupRule struct {
-// 	Description string
-// 	Destination string
-// 	Lifecycle   string
-// 	Name        string
-// 	Port        int
-// 	Protocol    string
-// }
 
 func (actor Actor) GetSpaceSummaryByOrganizationAndName(orgGUID string, name string) (SpaceSummary, Warnings, error) {
 	var allWarnings Warnings
 
-	org, warnings, _ := actor.GetOrganization(orgGUID)
+	org, warnings, err := actor.GetOrganization(orgGUID)
 	allWarnings = append(allWarnings, warnings...)
-	// if err != nil {
-	// 	return SpaceSummary{}, nil, nil
-	// }
+	if err != nil {
+		return SpaceSummary{}, allWarnings, err
+	}
 
-	space, warnings, _ := actor.GetSpaceByOrganizationAndName(org.GUID, name)
+	space, warnings, err := actor.GetSpaceByOrganizationAndName(org.GUID, name)
 	allWarnings = append(allWarnings, warnings...)
-	// if err != nil {
-	// 	return SpaceSummary{}, nil, nil
-	// }
+	if err != nil {
+		return SpaceSummary{}, allWarnings, err
+	}
 
-	apps, warnings, _ := actor.GetApplicationsBySpace(space.GUID)
+	apps, warnings, err := actor.GetApplicationsBySpace(space.GUID)
 	allWarnings = append(allWarnings, warnings...)
+	if err != nil {
+		return SpaceSummary{}, allWarnings, err
+	}
 
 	appNames := make([]string, len(apps))
 	for i, app := range apps {
@@ -49,8 +48,11 @@ func (actor Actor) GetSpaceSummaryByOrganizationAndName(orgGUID string, name str
 	}
 	sort.Strings(appNames)
 
-	serviceInstances, warnings, _ := actor.GetServiceInstancesBySpace(space.GUID)
+	serviceInstances, warnings, err := actor.GetServiceInstancesBySpace(space.GUID)
 	allWarnings = append(allWarnings, warnings...)
+	if err != nil {
+		return SpaceSummary{}, allWarnings, err
+	}
 
 	serviceInstanceNames := make([]string, len(serviceInstances))
 	for i, serviceInstance := range serviceInstances {
@@ -58,23 +60,38 @@ func (actor Actor) GetSpaceSummaryByOrganizationAndName(orgGUID string, name str
 	}
 	sort.Strings(serviceInstanceNames)
 
-	spaceQuota, warnings, _ := actor.GetSpaceQuota(space.SpaceQuotaDefinitionGUID)
+	spaceQuota, warnings, err := actor.GetSpaceQuota(space.SpaceQuotaDefinitionGUID)
 	allWarnings = append(allWarnings, warnings...)
+	if err != nil {
+		return SpaceSummary{}, allWarnings, err
+	}
 
-	securityGroups, warnings, _ := actor.GetSpaceRunningSecurityGroupsBySpace(space.GUID)
+	securityGroups, warnings, err := actor.GetSpaceRunningSecurityGroupsBySpace(space.GUID)
 	allWarnings = append(allWarnings, warnings...)
+	if err != nil {
+		return SpaceSummary{}, allWarnings, err
+	}
+
 	var securityGroupNames []string
+	var securityGroupRules []SecurityGroupRule
+
 	for _, securityGroup := range securityGroups {
 		securityGroupNames = append(securityGroupNames, securityGroup.Name)
+		securityGroupRules = append(securityGroupRules, extractSecurityGroupRules(securityGroup, "running")...)
 	}
 
-	securityGroups, warnings, _ = actor.GetSpaceStagingSecurityGroupsBySpace(space.GUID)
+	securityGroups, warnings, err = actor.GetSpaceStagingSecurityGroupsBySpace(space.GUID)
 	allWarnings = append(allWarnings, warnings...)
+	if err != nil {
+		return SpaceSummary{}, allWarnings, err
+	}
 	for _, securityGroup := range securityGroups {
-		securityGroupNames = append(securityGroupNames, securityGroup.Name)
+		securityGroupRules = append(securityGroupRules, extractSecurityGroupRules(securityGroup, "staging")...)
 	}
 
-	securityGroupNames = generic.SortAndUniquifyStringSlice(securityGroupNames)
+	sort.Sort(sortableSecurityGroupRules(securityGroupRules))
+
+	sort.Strings(securityGroupNames)
 
 	spaceSummary := SpaceSummary{
 		SpaceName:            name,
@@ -83,6 +100,7 @@ func (actor Actor) GetSpaceSummaryByOrganizationAndName(orgGUID string, name str
 		ServiceInstanceNames: serviceInstanceNames,
 		SpaceQuotaName:       spaceQuota.Name,
 		SecurityGroupNames:   securityGroupNames,
+		SecurityGroupRules:   securityGroupRules,
 	}
 
 	return spaceSummary, allWarnings, nil

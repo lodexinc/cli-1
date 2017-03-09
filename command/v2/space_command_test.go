@@ -190,10 +190,9 @@ var _ = FDescribe("space Command", func() {
 
 				Expect(fakeConfig.CurrentUserCallCount()).To(Equal(1))
 				Expect(fakeActor.GetSpaceSummaryByOrganizationAndNameCallCount()).To(Equal(1))
-				orgGUID, spaceName, includeSecurityGroupRules := fakeActor.GetSpaceSummaryByOrganizationAndNameArgsForCall(0)
+				orgGUID, spaceName := fakeActor.GetSpaceSummaryByOrganizationAndNameArgsForCall(0)
 				Expect(orgGUID).To(Equal("some-org-guid"))
 				Expect(spaceName).To(Equal("some-space"))
-				Expect(includeSecurityGroupRules).To(BeFalse())
 			})
 		})
 
@@ -282,7 +281,7 @@ var _ = FDescribe("space Command", func() {
 							Destination: "0.0.0.0-9.255.255.255",
 							Lifecycle:   "staging",
 							Name:        "public_networks",
-							Port:        12345,
+							Ports:       "12345",
 							Protocol:    "tcp",
 						},
 						{
@@ -290,7 +289,7 @@ var _ = FDescribe("space Command", func() {
 							Destination: "0.0.0.0-9.255.255.255",
 							Lifecycle:   "running",
 							Name:        "public_networks",
-							Port:        12345,
+							Ports:       "12345",
 							Protocol:    "tcp",
 						},
 						{
@@ -298,7 +297,7 @@ var _ = FDescribe("space Command", func() {
 							Destination: "11.0.0.0-169.253.255.255",
 							Lifecycle:   "staging",
 							Name:        "more_public_networks",
-							Port:        54321,
+							Ports:       "54321",
 							Protocol:    "udp",
 						},
 						{
@@ -306,7 +305,7 @@ var _ = FDescribe("space Command", func() {
 							Destination: "11.0.0.0-169.253.255.255",
 							Lifecycle:   "running",
 							Name:        "more_public_networks",
-							Port:        54321,
+							Ports:       "54321",
 							Protocol:    "udp",
 						},
 					},
@@ -319,10 +318,9 @@ var _ = FDescribe("space Command", func() {
 		It("displays warnings and security group rules", func() {
 			Expect(executeErr).To(BeNil())
 
-			orgGUID, spaceName, includeSecurityGroupRules := fakeActor.GetSpaceSummaryByOrganizationAndNameArgsForCall(0)
+			orgGUID, spaceName := fakeActor.GetSpaceSummaryByOrganizationAndNameArgsForCall(0)
 			Expect(orgGUID).To(Equal("some-org-guid"))
 			Expect(spaceName).To(Equal("some-space"))
-			Expect(includeSecurityGroupRules).To(BeTrue())
 
 			Eventually(testUI.Out).Should(Say("name:\\s+some-space"))
 			Eventually(testUI.Out).Should(Say("(?m)^\\s+security group\\s+destination\\s+ports\\s+protocol\\s+lifecycle\\s+description$"))

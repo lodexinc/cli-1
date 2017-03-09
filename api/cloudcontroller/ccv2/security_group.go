@@ -7,9 +7,17 @@ import (
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2/internal"
 )
 
+type SecurityGroupRule struct {
+	Destination string
+	Ports       string
+	Protocol    string
+}
+
 type SecurityGroup struct {
-	GUID string
-	Name string
+	Description string
+	GUID        string
+	Name        string
+	Rules       []SecurityGroupRule
 }
 
 // UnmarshalJSON helps unmarshal a Cloud Controller Security Group response
@@ -19,7 +27,12 @@ func (securityGroup *SecurityGroup) UnmarshalJSON(data []byte) error {
 		Entity   struct {
 			GUID string `json:"guid"`
 			Name string `json:"name"`
-		}
+			// Rules []struct {
+			// 	Destination string `json:"destination"`
+			// 	Ports       string `json:"ports"`
+			// 	Protocol    string `json:"protocol"`
+			// } `json:"rules"`
+		} `json:"entity"`
 	}
 
 	if err := json.Unmarshal(data, &ccSecurityGroup); err != nil {
@@ -28,6 +41,12 @@ func (securityGroup *SecurityGroup) UnmarshalJSON(data []byte) error {
 
 	securityGroup.GUID = ccSecurityGroup.Metadata.GUID
 	securityGroup.Name = ccSecurityGroup.Entity.Name
+	// securityGroup.Rules = make([]SecurityGroupRule, len(ccSecurityGroup.Entity.Rules))
+	// for i, ccRule := range ccSecurityGroup.Entity.Rules {
+	// 	securityGroup.Rules[i].Destination = ccRule.Destination
+	// 	securityGroup.Rules[i].Ports = ccRule.Ports
+	// 	securityGroup.Rules[i].Protocol = ccRule.Protocol
+	// }
 	return nil
 }
 
@@ -99,4 +118,12 @@ func (client *Client) GetSharedSecurityGroup(spaceGUID string) (SecurityGroup, W
 
 	// return domain, response.Warnings, nil
 	return SecurityGroup{}, nil, nil
+}
+
+func (client *Client) GetSpaceRunningSecurityGroupsBySpace(spaceGUID string) ([]SecurityGroup, Warnings, error) {
+	return nil, nil, nil
+}
+
+func (client *Client) GetSpaceStagingSecurityGroupsBySpace(spaceGUID string) ([]SecurityGroup, Warnings, error) {
+	return nil, nil, nil
 }

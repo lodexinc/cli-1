@@ -82,7 +82,7 @@ func (cmd SpaceCommand) displaySpaceSummary(displaySecurityGroupRules bool) erro
 	})
 	cmd.UI.DisplayNewline()
 
-	spaceSummary, warnings, err := cmd.Actor.GetSpaceSummaryByOrganizationAndName(cmd.Config.TargetedOrganization().GUID, cmd.RequiredArgs.Space, displaySecurityGroupRules)
+	spaceSummary, warnings, err := cmd.Actor.GetSpaceSummaryByOrganizationAndName(cmd.Config.TargetedOrganization().GUID, cmd.RequiredArgs.Space)
 	cmd.UI.DisplayWarnings(warnings)
 	if err != nil {
 		return err
@@ -127,7 +127,7 @@ func (cmd SpaceCommand) displaySpaceSummary(displaySecurityGroupRules bool) erro
 				currentGroupIndexString,
 				securityGroupRule.Name,
 				securityGroupRule.Destination,
-				fmt.Sprintf("%d", securityGroupRule.Port),
+				securityGroupRule.Ports,
 				securityGroupRule.Protocol,
 				securityGroupRule.Lifecycle,
 				securityGroupRule.Description,

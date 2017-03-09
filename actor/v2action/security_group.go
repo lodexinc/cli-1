@@ -93,3 +93,46 @@ func processSecurityGroups(spaceGUID string, ccv2SecurityGroups []ccv2.SecurityG
 
 	return securityGroups, warnings, nil
 }
+
+type sortableSecurityGroupRules []SecurityGroupRule
+
+func (s sortableSecurityGroupRules) Len() int {
+	return len(s)
+}
+
+func (s sortableSecurityGroupRules) Swap(i int, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s sortableSecurityGroupRules) Less(i int, j int) bool {
+	if s[i].Name < s[j].Name {
+		return true
+	}
+	if s[i].Name > s[j].Name {
+		return false
+	}
+	if s[i].Destination < s[j].Destination {
+		return true
+	}
+	if s[i].Destination > s[j].Destination {
+		return false
+	}
+	return s[i].Lifecycle < s[j].Lifecycle
+}
+
+func extractSecurityGroupRules(securityGroup SecurityGroup, lifecycle string) []SecurityGroupRule {
+	securityGroupRules := make([]SecurityGroupRule, len(securityGroup.Rules))
+
+	for i, rule := range securityGroup.Rules {
+		securityGroupRules[i] = SecurityGroupRule{
+			Name:        securityGroup.Name,
+			Description: securityGroup.Description,
+			Destination: rule.Destination,
+			Lifecycle:   lifecycle,
+			Ports:       rule.Ports,
+			Protocol:    rule.Protocol,
+		}
+	}
+
+	return securityGroupRules
+}

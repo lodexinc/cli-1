@@ -1,6 +1,8 @@
 package v2action_test
 
 import (
+	"errors"
+
 	. "code.cloudfoundry.org/cli/actor/v2action"
 	"code.cloudfoundry.org/cli/actor/v2action/v2actionfakes"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2"
@@ -15,7 +17,6 @@ var _ = Describe("Space Summary Actions", func() {
 		spaceSummary              SpaceSummary
 		warnings                  Warnings
 		err                       error
-		// expectedErr               error
 	)
 
 	BeforeEach(func() {
@@ -27,7 +28,7 @@ var _ = Describe("Space Summary Actions", func() {
 		spaceSummary, warnings, err = actor.GetSpaceSummaryByOrganizationAndName("some-org-guid", "some-space")
 	})
 
-	Describe("GetOrganizationSummaryByName", func() {
+	Describe("GetSpaceSummaryByOrganizationAndName", func() {
 		Context("when no errors are encountered", func() {
 			BeforeEach(func() {
 				fakeCloudControllerClient.GetOrganizationReturns(
@@ -47,8 +48,7 @@ var _ = Describe("Space Summary Actions", func() {
 						},
 					},
 					ccv2.Warnings{"warning-3", "warning-4"},
-					nil,
-				)
+					nil)
 
 				fakeCloudControllerClient.GetApplicationsReturns(
 					[]ccv2.Application{
@@ -60,8 +60,7 @@ var _ = Describe("Space Summary Actions", func() {
 						},
 					},
 					ccv2.Warnings{"warning-5", "warning-6"},
-					nil,
-				)
+					nil)
 
 				fakeCloudControllerClient.GetSpaceServiceInstancesReturns(
 					[]ccv2.ServiceInstance{
@@ -75,8 +74,7 @@ var _ = Describe("Space Summary Actions", func() {
 						},
 					},
 					ccv2.Warnings{"warning-7", "warning-8"},
-					nil,
-				)
+					nil)
 
 				fakeCloudControllerClient.GetSpaceQuotaReturns(
 					ccv2.SpaceQuota{
@@ -84,37 +82,86 @@ var _ = Describe("Space Summary Actions", func() {
 						Name: "some-space-quota",
 					},
 					ccv2.Warnings{"warning-9", "warning-10"},
-					nil,
-				)
+					nil)
 
 				fakeCloudControllerClient.GetSpaceRunningSecurityGroupsBySpaceReturns(
 					[]ccv2.SecurityGroup{
 						{
-							Name: "some-shared-security-group",
+							Name:        "some-shared-security-group",
+							Description: "Some shared walking group",
+							Rules: []ccv2.SecurityGroupRule{
+								{
+									Destination: "0.0.0.0-5.6.7.8",
+									Ports:       "80,443",
+									Protocol:    "tcp",
+								},
+								{
+									Destination: "127.10.10.10-127.10.10.255",
+									Ports:       "80,4443",
+									Protocol:    "udp",
+								},
+							},
 						},
 						{
-							Name: "some-running-security-group",
+							Name:        "some-running-security-group",
+							Description: "Some running walking group",
+							Rules: []ccv2.SecurityGroupRule{
+								{
+									Destination: "127.0.0.1-127.0.0.255",
+									Ports:       "8080,443",
+									Protocol:    "tcp",
+								},
+								{
+									Destination: "127.20.20.20-127.20.20.25",
+									Ports:       "80,4443",
+									Protocol:    "udp",
+								},
+							},
 						},
 					},
 					ccv2.Warnings{"warning-11", "warning-12"},
-					nil,
-				)
+					nil)
 
 				fakeCloudControllerClient.GetSpaceStagingSecurityGroupsBySpaceReturns(
 					[]ccv2.SecurityGroup{
 						{
-							Name: "some-staging-security-group",
+							Name:        "some-shared-security-group",
+							Description: "Some shared cinematic group",
+							Rules: []ccv2.SecurityGroupRule{
+								{
+									Destination: "0.0.0.0-5.6.7.8",
+									Ports:       "80,443",
+									Protocol:    "tcp",
+								},
+								{
+									Destination: "127.10.10.10-127.10.10.255",
+									Ports:       "80,4443",
+									Protocol:    "udp",
+								},
+							},
 						},
 						{
-							Name: "some-shared-security-group",
+							Name:        "some-staging-security-group",
+							Description: "Some staging cinematic group",
+							Rules: []ccv2.SecurityGroupRule{
+								{
+									Destination: "127.5.5.1-127.6.6.255",
+									Ports:       "32767,443",
+									Protocol:    "tcp",
+								},
+								{
+									Destination: "127.25.20.20-127.25.20.25",
+									Ports:       "80,9999",
+									Protocol:    "udp",
+								},
+							},
 						},
 					},
 					ccv2.Warnings{"warning-13", "warning-14"},
-					nil,
-				)
+					nil)
 			})
 
-			It("returns the organization summary and all warnings", func() {
+			It("returns the space summary and all warnings", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(warnings).To(ConsistOf([]string{
@@ -140,7 +187,73 @@ var _ = Describe("Space Summary Actions", func() {
 					AppNames:             []string{"some-app-1", "some-app-2"},
 					ServiceInstanceNames: []string{"some-service-instance-1", "some-service-instance-2"},
 					SpaceQuotaName:       "some-space-quota",
-					SecurityGroupNames:   []string{"some-running-security-group", "some-shared-security-group", "some-staging-security-group"},
+					SecurityGroupNames:   []string{"some-running-security-group", "some-shared-security-group"},
+					SecurityGroupRules: []SecurityGroupRule{
+						{
+							Name:        "some-running-security-group",
+							Description: "Some running walking group",
+							Destination: "127.0.0.1-127.0.0.255",
+							Lifecycle:   "running",
+							Ports:       "8080,443",
+							Protocol:    "tcp",
+						},
+						{
+							Name:        "some-running-security-group",
+							Description: "Some running walking group",
+							Destination: "127.20.20.20-127.20.20.25",
+							Lifecycle:   "running",
+							Ports:       "80,4443",
+							Protocol:    "udp",
+						},
+						{
+							Name:        "some-shared-security-group",
+							Description: "Some shared walking group",
+							Destination: "0.0.0.0-5.6.7.8",
+							Lifecycle:   "running",
+							Ports:       "80,443",
+							Protocol:    "tcp",
+						},
+						{
+							Name:        "some-shared-security-group",
+							Description: "Some shared cinematic group",
+							Destination: "0.0.0.0-5.6.7.8",
+							Lifecycle:   "staging",
+							Ports:       "80,443",
+							Protocol:    "tcp",
+						},
+						{
+							Name:        "some-shared-security-group",
+							Description: "Some shared walking group",
+							Destination: "127.10.10.10-127.10.10.255",
+							Lifecycle:   "running",
+							Ports:       "80,4443",
+							Protocol:    "udp",
+						},
+						{
+							Name:        "some-shared-security-group",
+							Description: "Some shared cinematic group",
+							Destination: "127.10.10.10-127.10.10.255",
+							Lifecycle:   "staging",
+							Ports:       "80,4443",
+							Protocol:    "udp",
+						},
+						{
+							Name:        "some-staging-security-group",
+							Description: "Some staging cinematic group",
+							Destination: "127.25.20.20-127.25.20.25",
+							Lifecycle:   "staging",
+							Ports:       "80,9999",
+							Protocol:    "udp",
+						},
+						{
+							Name:        "some-staging-security-group",
+							Description: "Some staging cinematic group",
+							Destination: "127.5.5.1-127.6.6.255",
+							Lifecycle:   "staging",
+							Ports:       "32767,443",
+							Protocol:    "tcp",
+						},
+					},
 				}))
 
 				Expect(fakeCloudControllerClient.GetOrganizationCallCount()).To(Equal(1))
@@ -190,80 +303,347 @@ var _ = Describe("Space Summary Actions", func() {
 				Expect(spaceGUID).To(Equal("some-space-guid"))
 			})
 
-			// })
+			Context("when an error is encountered getting the organization", func() {
+				var expectedErr error
 
-			// Context("when an error is encountered getting the organization", func() {
-			// BeforeEach(func() {
-			// 	expectedErr = errors.New("get-orgs-error")
-			// 	fakeCloudControllerClient.GetOrganizationsReturns(
-			// 		[]ccv2.Organization{},
-			// 		ccv2.Warnings{
-			// 			"warning-1",
-			// 			"warning-2",
-			// 		},
-			// 		expectedErr,
-			// 	)
-			// })
+				BeforeEach(func() {
+					expectedErr = errors.New("get-org-error")
+					fakeCloudControllerClient.GetOrganizationReturns(
+						ccv2.Organization{},
+						ccv2.Warnings{
+							"warning-1",
+							"warning-2",
+						},
+						expectedErr)
+				})
 
-			// It("returns the error and all warnings", func() {
-			// 	Expect(err).To(MatchError(expectedErr))
-			// 	Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
-			// })
-			// })
+				It("returns the error and all warnings", func() {
+					Expect(err).To(MatchError(expectedErr))
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+				})
+			})
 
-			// Context("when the organization exists", func() {
-			// BeforeEach(func() {
-			// 	fakeCloudControllerClient.GetOrganizationsReturns(
-			// 		[]ccv2.Organization{
-			// 			{GUID: "some-org-guid"},
-			// 		},
-			// 		ccv2.Warnings{
-			// 			"warning-1",
-			// 			"warning-2",
-			// 		},
-			// 		nil,
-			// 	)
-			// })
+			Context("when an error is encountered getting the space", func() {
+				var expectedErr error
 
-			// Context("when an error is encountered getting the organization domains", func() {
-			// 	BeforeEach(func() {
-			// 		expectedErr = errors.New("shared domains error")
-			// 		fakeCloudControllerClient.GetSharedDomainsReturns([]ccv2.Domain{}, ccv2.Warnings{"shared domains warning"}, expectedErr)
-			// 	})
+				BeforeEach(func() {
+					expectedErr = errors.New("get-space-error")
 
-			// 	It("returns that error and all warnings", func() {
-			// 		Expect(err).To(MatchError(expectedErr))
-			// 		Expect(warnings).To(ConsistOf("warning-1", "warning-2", "shared domains warning"))
-			// 	})
-			// })
+					fakeCloudControllerClient.GetOrganizationReturns(
+						ccv2.Organization{
+							GUID: "some-org-guid",
+							Name: "some-org",
+						},
+						nil,
+						nil)
 
-			// Context("when an error is encountered getting the organization quota", func() {
-			// 	BeforeEach(func() {
-			// 		expectedErr = errors.New("some org quota error")
-			// 		fakeCloudControllerClient.GetOrganizationQuotaReturns(ccv2.OrganizationQuota{}, ccv2.Warnings{"quota warning"}, expectedErr)
-			// 	})
+					fakeCloudControllerClient.GetSpacesReturns(
+						[]ccv2.Space{},
+						ccv2.Warnings{"warning-1", "warning-2"},
+						expectedErr)
+				})
 
-			// 	It("returns the error and all warnings", func() {
-			// 		Expect(err).To(MatchError(expectedErr))
-			// 		Expect(warnings).To(ConsistOf("warning-1", "warning-2", "quota warning"))
-			// 	})
-			// })
+				It("returns the error and all warnings", func() {
+					Expect(err).To(MatchError(expectedErr))
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+				})
+			})
 
-			// Context("when an error is encountered getting the organization spaces", func() {
-			// 	BeforeEach(func() {
-			// 		expectedErr = errors.New("cc-get-spaces-error")
-			// 		fakeCloudControllerClient.GetSpacesReturns(
-			// 			[]ccv2.Space{},
-			// 			ccv2.Warnings{"spaces warning"},
-			// 			expectedErr,
-			// 		)
-			// 	})
+			Context("when an error is encountered getting the application", func() {
+				var expectedErr error
 
-			// 	It("returns the error and all warnings", func() {
-			// 		Expect(err).To(MatchError(expectedErr))
-			// 		Expect(warnings).To(ConsistOf("warning-1", "warning-2", "spaces warning"))
-			// 	})
-			// })
+				BeforeEach(func() {
+					expectedErr = errors.New("get-applications-error")
+
+					fakeCloudControllerClient.GetOrganizationReturns(
+						ccv2.Organization{
+							GUID: "some-org-guid",
+							Name: "some-org",
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpacesReturns(
+						[]ccv2.Space{
+							{
+								GUID: "some-space-guid",
+								Name: "some-space",
+								SpaceQuotaDefinitionGUID: "some-space-quota-guid",
+							},
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetApplicationsReturns(
+						[]ccv2.Application{},
+						ccv2.Warnings{"warning-1", "warning-2"},
+						expectedErr)
+				})
+
+				It("returns the error and all warnings", func() {
+					Expect(err).To(MatchError(expectedErr))
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+				})
+			})
+
+			Context("when an error is encountered getting the service instances", func() {
+				var expectedErr error
+
+				BeforeEach(func() {
+					expectedErr = errors.New("get-service-instances-error")
+
+					fakeCloudControllerClient.GetOrganizationReturns(
+						ccv2.Organization{
+							GUID: "some-org-guid",
+							Name: "some-org",
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpacesReturns(
+						[]ccv2.Space{
+							{
+								GUID: "some-space-guid",
+								Name: "some-space",
+								SpaceQuotaDefinitionGUID: "some-space-quota-guid",
+							},
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetApplicationsReturns(
+						[]ccv2.Application{
+							{
+								Name: "some-app-2",
+							},
+							{
+								Name: "some-app-1",
+							},
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpaceServiceInstancesReturns(
+						[]ccv2.ServiceInstance{},
+						ccv2.Warnings{"warning-1", "warning-2"},
+						expectedErr)
+				})
+
+				It("returns the error and all warnings", func() {
+					Expect(err).To(MatchError(expectedErr))
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+				})
+			})
+
+			Context("when an error is encountered getting the space quota", func() {
+				var expectedErr error
+
+				BeforeEach(func() {
+					expectedErr = errors.New("get-space-quota-error")
+
+					fakeCloudControllerClient.GetOrganizationReturns(
+						ccv2.Organization{
+							GUID: "some-org-guid",
+							Name: "some-org",
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpacesReturns(
+						[]ccv2.Space{
+							{
+								GUID: "some-space-guid",
+								Name: "some-space",
+								SpaceQuotaDefinitionGUID: "some-space-quota-guid",
+							},
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetApplicationsReturns(
+						[]ccv2.Application{
+							{
+								Name: "some-app-2",
+							},
+							{
+								Name: "some-app-1",
+							},
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpaceServiceInstancesReturns(
+						[]ccv2.ServiceInstance{
+							{
+								GUID: "some-service-instance-guid-2",
+								Name: "some-service-instance-2",
+							},
+							{
+								GUID: "some-service-instance-guid-1",
+								Name: "some-service-instance-1",
+							},
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpaceQuotaReturns(
+						ccv2.SpaceQuota{},
+						ccv2.Warnings{"warning-1", "warning-2"},
+						expectedErr)
+				})
+
+				It("returns the error and all warnings", func() {
+					Expect(err).To(MatchError(expectedErr))
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+				})
+			})
+
+			Context("when an error is encountered getting the running security groups", func() {
+				var expectedErr error
+
+				BeforeEach(func() {
+					expectedErr = errors.New("get-running-security-groups-error")
+
+					fakeCloudControllerClient.GetOrganizationReturns(
+						ccv2.Organization{
+							GUID: "some-org-guid",
+							Name: "some-org",
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpacesReturns(
+						[]ccv2.Space{
+							{
+								GUID: "some-space-guid",
+								Name: "some-space",
+								SpaceQuotaDefinitionGUID: "some-space-quota-guid",
+							},
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetApplicationsReturns(
+						[]ccv2.Application{
+							{
+								Name: "some-app-2",
+							},
+							{
+								Name: "some-app-1",
+							},
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpaceServiceInstancesReturns(
+						[]ccv2.ServiceInstance{
+							{
+								GUID: "some-service-instance-guid-2",
+								Name: "some-service-instance-2",
+							},
+							{
+								GUID: "some-service-instance-guid-1",
+								Name: "some-service-instance-1",
+							},
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpaceQuotaReturns(
+						ccv2.SpaceQuota{
+							GUID: "some-space-quota-guid",
+							Name: "some-space-quota",
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpaceRunningSecurityGroupsBySpaceReturns(
+						[]ccv2.SecurityGroup{},
+						ccv2.Warnings{"warning-1", "warning-2"},
+						expectedErr)
+				})
+
+				It("returns the error and all warnings", func() {
+					Expect(err).To(MatchError(expectedErr))
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+				})
+			})
+
+			Context("when an error is encountered getting the staging security groups", func() {
+				var expectedErr error
+
+				BeforeEach(func() {
+					expectedErr = errors.New("get-staging-security-groups-error")
+
+					fakeCloudControllerClient.GetOrganizationReturns(
+						ccv2.Organization{
+							GUID: "some-org-guid",
+							Name: "some-org",
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpacesReturns(
+						[]ccv2.Space{
+							{
+								GUID: "some-space-guid",
+								Name: "some-space",
+								SpaceQuotaDefinitionGUID: "some-space-quota-guid",
+							},
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetApplicationsReturns(
+						[]ccv2.Application{
+							{
+								Name: "some-app-2",
+							},
+							{
+								Name: "some-app-1",
+							},
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpaceServiceInstancesReturns(
+						[]ccv2.ServiceInstance{
+							{
+								GUID: "some-service-instance-guid-2",
+								Name: "some-service-instance-2",
+							},
+							{
+								GUID: "some-service-instance-guid-1",
+								Name: "some-service-instance-1",
+							},
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpaceQuotaReturns(
+						ccv2.SpaceQuota{
+							GUID: "some-space-quota-guid",
+							Name: "some-space-quota",
+						},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpaceRunningSecurityGroupsBySpaceReturns(
+						[]ccv2.SecurityGroup{},
+						nil,
+						nil)
+
+					fakeCloudControllerClient.GetSpaceStagingSecurityGroupsBySpaceReturns(
+						[]ccv2.SecurityGroup{},
+						ccv2.Warnings{"warning-1", "warning-2"},
+						expectedErr)
+				})
+
+				It("returns the error and all warnings", func() {
+					Expect(err).To(MatchError(expectedErr))
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+				})
+			})
 		})
 	})
 })
